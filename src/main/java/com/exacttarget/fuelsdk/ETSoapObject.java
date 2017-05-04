@@ -474,12 +474,13 @@ public abstract class ETSoapObject extends ETApiObject {
             result.setResponseCode(createResult.getStatusCode());
             result.setResponseMessage(createResult.getStatusMessage());
             result.setErrorCode(createResult.getErrorCode());
-            StringBuilder errorMessage = new StringBuilder();
             if (externalType == ETDataExtensionRow.class && result.getStatus() == ETResult.Status.ERROR) {
+                StringBuilder errorMessage = new StringBuilder();
                 DataExtensionCreateResult dataExtensionCreateResult = (createResult instanceof DataExtensionCreateResult ? (DataExtensionCreateResult) createResult : null);
                 if (dataExtensionCreateResult != null) {
-                    if (dataExtensionCreateResult.getKeyErrors() != null && !dataExtensionCreateResult.getKeyErrors().getKeyError().isEmpty()) {
-                        for (DataExtensionError error : dataExtensionCreateResult.getKeyErrors().getKeyError()) {
+                    DataExtensionCreateResult.KeyErrors keyErrors = dataExtensionCreateResult.getKeyErrors();
+                    if (keyErrors != null && !keyErrors.getKeyError().isEmpty()) {
+                        for (DataExtensionError error : keyErrors.getKeyError()) {
                             errorMessage.append(error.getErrorMessage()).append(". ");
                         }
                     }
@@ -609,12 +610,13 @@ public abstract class ETSoapObject extends ETApiObject {
             result.setResponseCode(updateResult.getStatusCode());
             result.setResponseMessage(updateResult.getStatusMessage());
             result.setErrorCode(updateResult.getErrorCode());
-            StringBuilder errorMessage = new StringBuilder();
             if (externalType == ETDataExtensionRow.class && result.getStatus() == ETResult.Status.ERROR) {
+                StringBuilder errorMessage = new StringBuilder();
                 DataExtensionUpdateResult dataExtensionUpdateResult = (updateResult instanceof DataExtensionUpdateResult ? (DataExtensionUpdateResult) updateResult : null);
                 if (dataExtensionUpdateResult != null) {
-                    if (dataExtensionUpdateResult.getKeyErrors() != null && !dataExtensionUpdateResult.getKeyErrors().getKeyError().isEmpty()) {
-                        for (DataExtensionError error : dataExtensionUpdateResult.getKeyErrors().getKeyError()) {
+                    DataExtensionUpdateResult.KeyErrors keyErrors = dataExtensionUpdateResult.getKeyErrors();
+                    if (keyErrors != null && !keyErrors.getKeyError().isEmpty()) {
+                        for (DataExtensionError error : keyErrors.getKeyError()) {
                             errorMessage.append(error.getErrorMessage()).append(". ");
                         }
                     }
