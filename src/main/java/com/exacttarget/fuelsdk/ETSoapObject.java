@@ -45,12 +45,16 @@ import java.util.Map;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlElementRef;
 
+import com.exacttarget.fuelsdk.internal.DataExtensionCreateResult;
+import com.exacttarget.fuelsdk.internal.DataExtensionError;
+import com.exacttarget.fuelsdk.internal.DataExtensionUpdateResult;
 import org.apache.commons.beanutils.BeanUtils;
 import org.apache.commons.beanutils.BeanUtilsBean;
 import org.apache.commons.beanutils.ConversionException;
 import org.apache.commons.beanutils.ConvertUtilsBean;
 import org.apache.commons.beanutils.Converter;
 import org.apache.commons.beanutils.PropertyUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 
 import com.exacttarget.fuelsdk.annotations.ExternalName;
@@ -470,6 +474,21 @@ public abstract class ETSoapObject extends ETApiObject {
             result.setResponseCode(createResult.getStatusCode());
             result.setResponseMessage(createResult.getStatusMessage());
             result.setErrorCode(createResult.getErrorCode());
+            StringBuilder errorMessage = new StringBuilder();
+            if (externalType == ETDataExtensionRow.class && result.getStatus() == ETResult.Status.ERROR) {
+                DataExtensionCreateResult dataExtensionCreateResult = (createResult instanceof DataExtensionCreateResult ? (DataExtensionCreateResult) createResult : null);
+                if (dataExtensionCreateResult != null) {
+                    if (dataExtensionCreateResult.getKeyErrors() != null && !dataExtensionCreateResult.getKeyErrors().getKeyError().isEmpty()) {
+                        for (DataExtensionError error : dataExtensionCreateResult.getKeyErrors().getKeyError()) {
+                            errorMessage.append(error.getErrorMessage()).append(". ");
+                        }
+                    }
+                    if (StringUtils.isNotEmpty(dataExtensionCreateResult.getErrorMessage())) {
+                        errorMessage.append(dataExtensionCreateResult.getErrorMessage());
+                    }
+                    result.setErrorMessage(errorMessage.toString());
+                }
+            }
             if (result.getResponseCode().equals("OK")) { // XXX?
                 result.setObject(externalObject);
             }
@@ -590,6 +609,21 @@ public abstract class ETSoapObject extends ETApiObject {
             result.setResponseCode(updateResult.getStatusCode());
             result.setResponseMessage(updateResult.getStatusMessage());
             result.setErrorCode(updateResult.getErrorCode());
+            StringBuilder errorMessage = new StringBuilder();
+            if (externalType == ETDataExtensionRow.class && result.getStatus() == ETResult.Status.ERROR) {
+                DataExtensionUpdateResult dataExtensionUpdateResult = (updateResult instanceof DataExtensionUpdateResult ? (DataExtensionUpdateResult) updateResult : null);
+                if (dataExtensionUpdateResult != null) {
+                    if (dataExtensionUpdateResult.getKeyErrors() != null && !dataExtensionUpdateResult.getKeyErrors().getKeyError().isEmpty()) {
+                        for (DataExtensionError error : dataExtensionUpdateResult.getKeyErrors().getKeyError()) {
+                            errorMessage.append(error.getErrorMessage()).append(". ");
+                        }
+                    }
+                    if (StringUtils.isNotEmpty(dataExtensionUpdateResult.getErrorMessage())) {
+                        errorMessage.append(dataExtensionUpdateResult.getErrorMessage());
+                    }
+                    result.setErrorMessage(errorMessage.toString());
+                }
+            }
             if (result.getResponseCode().equals("OK")) { // XXX?
                 result.setObject(externalObject);
             }
