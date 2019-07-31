@@ -81,6 +81,7 @@ import com.exacttarget.fuelsdk.internal.DeleteResult;
 import com.exacttarget.fuelsdk.internal.FilterPart;
 import com.exacttarget.fuelsdk.internal.Email;
 import com.exacttarget.fuelsdk.internal.EmailType;
+import com.exacttarget.fuelsdk.internal.ExtractDescription;
 import com.exacttarget.fuelsdk.internal.ListClassificationEnum;
 import com.exacttarget.fuelsdk.internal.ListTypeEnum;
 import com.exacttarget.fuelsdk.internal.LogicalOperators;
@@ -108,12 +109,29 @@ import com.exacttarget.fuelsdk.internal.UpdateResult;
 public abstract class ETSoapObject extends ETApiObject {
     private static Logger logger = Logger.getLogger(ETSoapObject.class);
 
+    /**
+     * The page size
+     */
     public final static int PAGE_SIZE = 2500;
 
+    /** 
+    * Class constructor, Initializes a new instance of the class.
+    */
     public ETSoapObject() {
         registerConverters();
     }
 
+    /**
+     * 
+     * @param <T>           The type which extends from ETSoapObject
+     * @param client        The ETClient object
+     * @param type          The class type to retrieve
+     * @param page          The page number
+     * @param pageSize      The page size
+     * @param filter        The ETFilter object
+     * @return              The ETResponse object of type T which extends from ETSoapObject
+     * @throws ETSdkException 
+     */
     public static <T extends ETSoapObject> ETResponse<T> retrieve(ETClient client,
                                                                   Class<T> type,
                                                                   Integer page,
@@ -135,15 +153,21 @@ public abstract class ETSoapObject extends ETApiObject {
         return retrieve(client, null, filter, type);
     }
 
-    //
-    // ETSoapObject has additional retrieve methods that take the
-    // SOAP object name and request ID for continuing requests.
-    // In most cases, the SOAP object name is the same as the
-    // internal class name, but in a few cases, it is not (e.g.,
-    // DataExtensionObjects require the name of
-    // the data extension in brackets: DataExtensionObject[foo]).
-    //
-
+    /**
+     * ETSoapObject has additional retrieve methods that take the
+     * SOAP object name and request ID for continuing requests.
+     * In most cases, the SOAP object name is the same as the
+     * internal class name, but in a few cases, it is not (e.g.,
+     * DataExtensionObjects require the name of
+     * the data extension in brackets: DataExtensionObject[foo]).
+     * @param <T>           The type which extends from ETSoapObject
+     * @param client        The ETClient object
+     * @param soapObjectName The object name to retrieve for SOAP
+     * @param filter        The ETFilter object
+     * @param type          The class type to retrieve
+     * @return              The ETResponse object of type T which extends from ETSoapObject
+     * @throws ETSdkException 
+     */
     protected static <T extends ETSoapObject> ETResponse<T> retrieve(ETClient client,
                                                                      String soapObjectName,
                                                                      ETFilter filter,
@@ -153,6 +177,15 @@ public abstract class ETSoapObject extends ETApiObject {
         return retrieve(client, soapObjectName, filter, null, type);
     }
 
+    /**
+     * 
+     * @param <T>           The type which extends from ETSoapObject
+     * @param client        The ETClient object
+     * @param type          The class type to retrieve
+     * @param continueRequest The continue request
+     * @return              The ETResponse object of type T which extends from ETSoapObject
+     * @throws ETSdkException 
+     */
     protected static <T extends ETSoapObject> ETResponse<T> retrieve(ETClient client,
                                                                      String continueRequest,
                                                                      Class<T> type)
@@ -161,6 +194,17 @@ public abstract class ETSoapObject extends ETApiObject {
         return retrieve(client, null, new ETFilter(), continueRequest, type);
     }
 
+    /**
+     * 
+     * @param <T>           The type which extends from ETSoapObject
+     * @param client        The ETClient object
+     * @param soapObjectName The object name to retrieve for SOAP
+     * @param filter        The ETFilter object
+     * @param continueRequest The continue request
+     * @param type          The class type to retrieve
+     * @return              The ETResponse object of type T which extends from ETSoapObject
+     * @throws ETSdkException 
+     */
     protected static <T extends ETSoapObject> ETResponse<T> retrieve(ETClient client,
                                                                      String soapObjectName,
                                                                      ETFilter filter,
@@ -236,7 +280,8 @@ public abstract class ETSoapObject extends ETApiObject {
         // Perform the SOAP retrieve:
         //
 
-        Soap soap = connection.getSoap();
+        //Soap soap = connection.getSoap();
+        Soap soap = null;
 
         RetrieveRequest retrieveRequest = new RetrieveRequest();
 
@@ -245,8 +290,10 @@ public abstract class ETSoapObject extends ETApiObject {
             // to the name of the internal class representing the object:
             if (soapObjectName != null) {
                 retrieveRequest.setObjectType(soapObjectName);
+                soap = connection.getSoap("retrieve", soapObjectName);
             } else {
                 retrieveRequest.setObjectType(internalType.getSimpleName());
+                soap = connection.getSoap("retrieve", internalType.getSimpleName());
             }
             retrieveRequest.getProperties().addAll(internalProperties);
 
@@ -362,6 +409,13 @@ public abstract class ETSoapObject extends ETApiObject {
         return response;
     }
 
+    /**
+     * @param <T>                   The type which extends from ETSoapObject
+     * @param client                The ETClient object
+     * @param objects               The List of objects to create
+     * @return                      The ETResponse object of type T which extends from ETSoapObject
+     * @throws ETSdkException 
+     */
     public static <T extends ETSoapObject> ETResponse<T> create(ETClient client,
                                                                 List<T> objects)
         throws ETSdkException
@@ -389,14 +443,18 @@ public abstract class ETSoapObject extends ETApiObject {
         // Perform the SOAP create:
         //
 
-        Soap soap = connection.getSoap();
-
+//        Soap soap = connection.getSoap();
+//        Soap soap = connection.getSoap("create");
+        String obj = "";
+        
         CreateRequest createRequest = new CreateRequest();
         createRequest.setOptions(new CreateOptions());
         for (T object : objects) {
             object.setClient(client);
             createRequest.getObjects().add(object.toInternal());
+            obj += object.getClass().getSimpleName().substring(2);
         }
+        Soap soap = connection.getSoap("create", obj);
 
         if (logger.isTraceEnabled()) {
             logger.trace("CreateRequest:");
@@ -499,6 +557,13 @@ public abstract class ETSoapObject extends ETApiObject {
         return response;
     }
 
+    /**
+     * @param <T>                   The type which extends from ETSoapObject
+     * @param client                The ETClient object
+     * @param objects               The List of objects to update
+     * @return                      The ETResponse object of type T which extends from ETSoapObject
+     * @throws ETSdkException 
+     */
     public static <T extends ETSoapObject> ETResponse<T> update(ETClient client,
                                                                 List<T> objects)
         throws ETSdkException
@@ -526,14 +591,18 @@ public abstract class ETSoapObject extends ETApiObject {
         // Perform the SOAP update:
         //
 
-        Soap soap = connection.getSoap();
+//        Soap soap = connection.getSoap();
+//        Soap soap = connection.getSoap("update");
+        String obj = "";
 
         UpdateRequest updateRequest = new UpdateRequest();
         updateRequest.setOptions(new UpdateOptions());
         for (T object : objects) {
             object.setClient(client);
             updateRequest.getObjects().add(object.toInternal());
+            obj += object.getClass().getSimpleName().substring(2);
         }
+        Soap soap = connection.getSoap("update", obj);
 
         if (logger.isTraceEnabled()) {
             logger.trace("UpdateRequest:");
@@ -635,6 +704,13 @@ public abstract class ETSoapObject extends ETApiObject {
         return response;
     }
 
+    /**
+     * @param <T>                   The type which extends from ETSoapObject
+     * @param client                The ETClient object
+     * @param objects               The List of objects to delete
+     * @return                      The ETResponse object of type T which extends from ETSoapObject
+     * @throws ETSdkException 
+     */
     public static <T extends ETSoapObject> ETResponse<T> delete(ETClient client,
                                                                 List<T> objects)
         throws ETSdkException
@@ -653,6 +729,14 @@ public abstract class ETSoapObject extends ETApiObject {
         return delete(client, internalObjects, true);
     }
 
+    /**
+     * @param <T>                   The type which extends from ETSoapObject
+     * @param client                The ETClient object
+     * @param objects               The List of APIObjects to delete
+     * @param internal              true if it is internal, false otherwise
+     * @return                      The ETResponse object of type T which extends from ETSoapObject
+     * @throws ETSdkException 
+     */
     protected static <T extends ETSoapObject> ETResponse<T> delete(ETClient client,
                                                                    List<APIObject> objects,
                                                                    boolean internal)
@@ -680,8 +764,12 @@ public abstract class ETSoapObject extends ETApiObject {
         //
         // Perform the SOAP delete:
         //
+        String obj = "";
+        for (APIObject object : objects)
+            obj += object.getClass().getSimpleName();//.substring(2);
 
-        Soap soap = connection.getSoap();
+        Soap soap = connection.getSoap("delete", obj);
+        
 
         DeleteRequest deleteRequest = new DeleteRequest();
         deleteRequest.setOptions(new DeleteOptions());
@@ -747,12 +835,23 @@ public abstract class ETSoapObject extends ETApiObject {
                 ETDataExtension.class);
         convertUtils.register(new InternalObjectConverter(),
                 DataExtension.class);
-
+        
+//        convertUtils.register(new ExternalObjectConverter(),
+//                ETSendableDataExtension.class);
+        convertUtils.register(new ExternalObjectConverter(),
+                ETProfileAttribute.class);
+        
         // ETDataExtensionColumn
         convertUtils.register(new ExternalObjectConverter(),
                 ETDataExtensionColumn.class);
         convertUtils.register(new InternalObjectConverter(),
                 DataExtensionField.class);
+
+        // ETExtractDescription
+        convertUtils.register(new ExternalObjectConverter(),
+                ETExtractDescription.class);
+        convertUtils.register(new InternalObjectConverter(),
+                ExtractDescription.class);
 
         // ETDataExtensionColumnType
         convertUtils.register(new EnumConverter(),
@@ -817,8 +916,10 @@ public abstract class ETSoapObject extends ETApiObject {
         // ETSubscriber.Attribute
         convertUtils.register(new EnumConverter(),
                 ETSubscriber.Status.class);
-        convertUtils.register(new EnumConverter(),
-                Attribute.class);
+//        convertUtils.register(new EnumConverter(),
+//                Attribute.class);
+//        convertUtils.register(new InternalObjectConverter(),
+//                Attribute.class);
 
         // ETSubscriber.Status
         convertUtils.register(new EnumConverter(),
@@ -841,6 +942,11 @@ public abstract class ETSoapObject extends ETApiObject {
 
     public class ExternalObjectConverter implements Converter {
         @SuppressWarnings("rawtypes")
+        /**
+         * @param type      The class type to convert
+         * @param value     The value to convert
+         * @return          The converted object
+         */
         public Object convert(Class type, Object value) {
             ETSoapObject externalObject = null;
             try {
@@ -859,6 +965,11 @@ public abstract class ETSoapObject extends ETApiObject {
 
     public class InternalObjectConverter implements Converter {
         @SuppressWarnings("rawtypes")
+        /**
+         * @param type      The class type to convert
+         * @param value     The value to convert
+         * @return          The converted object
+         */
         public Object convert(Class type, Object value) {
             APIObject internalObject = null;
             try {
@@ -872,6 +983,11 @@ public abstract class ETSoapObject extends ETApiObject {
 
     public class DataExtensionRowConverter implements Converter {
         @SuppressWarnings({ "rawtypes", "unchecked" })
+        /**
+         * @param type      The class type to convert
+         * @param value     The value to convert
+         * @return          The converted object
+         */
         public Object convert(Class type, Object value) {
             if (type == Map.class) {
                 // we're converting from internal to external
@@ -900,11 +1016,22 @@ public abstract class ETSoapObject extends ETApiObject {
 
     public class EnumConverter implements Converter {
         @SuppressWarnings({ "rawtypes", "unchecked" })
+        /**
+         * @param type      The class type to convert
+         * @param value     The value to convert
+         * @return          The converted object
+         */
         public Object convert(Class type, Object value) {
             return Enum.valueOf(type, value.toString());
         }
     }
 
+    /**
+     * 
+     * @param internalObject  The internal APIObject
+     * @return The ETSoapObject that is create from the internal APIObject parameter
+     * @throws ETSdkException 
+     */
     public ETSoapObject fromInternal(APIObject internalObject)
         throws ETSdkException
     {
@@ -1051,6 +1178,11 @@ public abstract class ETSoapObject extends ETApiObject {
         return externalObject;
     }
 
+    /**
+     * 
+     * @return The internal APIObject
+     * @throws ETSdkException 
+     */
     public APIObject toInternal()
         throws ETSdkException
     {
@@ -1179,6 +1311,7 @@ public abstract class ETSoapObject extends ETApiObject {
                                       internalFieldName,
                                       externalFieldValue);
             } catch (Exception ex) {
+                //ex.printStackTrace();
                 throw new ETSdkException("could not set property \""
                         + internalFieldName
                         + "\" of object "
@@ -1343,6 +1476,11 @@ public abstract class ETSoapObject extends ETApiObject {
         return internalProperties;
     }
 
+    /**
+     * 
+     * @param expression The ETExpression to create FilterPart
+     * @return The FilterPart object, can be SimpleFilterPart or ComplexFilterPart
+     */
     public static FilterPart toFilterPart(ETExpression expression) {
         ETExpression.Operator operator = expression.getOperator();
         if (operator == null) {

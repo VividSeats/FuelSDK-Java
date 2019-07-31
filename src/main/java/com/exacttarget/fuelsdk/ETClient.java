@@ -59,17 +59,19 @@ public class ETClient {
     private static Logger logger = Logger.getLogger(ETClient.class);
 
     private static final String DEFAULT_PROPERTIES_FILE_NAME =
-            "/fuelsdk.properties";
+            "fuelsdk.properties";
     private static final String DEFAULT_ENDPOINT =
             "https://www.exacttargetapis.com";
     private static final String DEFAULT_AUTH_ENDPOINT =
             "https://auth.exacttargetapis.com";
     private static final String PATH_REQUESTTOKEN =
             "/v1/requestToken";
-    private static final String PATH_REQUESTTOKEN_LEGACY =
-            "/v1/requestToken?legacy=1";
+    private static final String PATH_OAUTH2TOKEN =
+            "/v2/token";
     private static final String PATH_ENDPOINTS_SOAP =
             "/platform/v1/endpoints/soap";
+    private static final String DEFAULT_SOAP_ENDPOINT =
+            "https://webservice.exacttarget.com/Service.asmx";
 
     private ETConfiguration configuration = null;
 
@@ -97,19 +99,36 @@ public class ETClient {
     private String refreshToken = null;
 
     private long tokenExpirationTime = 0;
+    private static long soapEndpointExpiration = 0;
+    private static String fetchedSoapEndpoint = null;
+    private static final long cacheDurationInMillis = 1000 * 60 * 10; // 10 minutes
+    private boolean useOAuth2Authentication;
+    private String accountId;
+    private String scope;
 
+    /** 
+    * Class constructor, Initializes a new instance of the class.
+    */
     public ETClient()
         throws ETSdkException
     {
         this(DEFAULT_PROPERTIES_FILE_NAME);
     }
 
+    /** 
+    * Class constructor, Initializes a new instance of the class.
+    * @param   file  The configuration file which contains the clientId and clientSecret
+    */
     public ETClient(String file)
         throws ETSdkException
     {
         this(new ETConfiguration(file));
     }
 
+    /** 
+    * Class constructor, Initializes a new instance of the class.
+    * @param configuration      The ETConfiguration object which contains the clientId and clientSecret
+    */
     public ETClient(ETConfiguration configuration)
         throws ETSdkException
     {
@@ -140,21 +159,15 @@ public class ETClient {
             gson = gsonBuilder.create();
         }
 
+        useOAuth2Authentication = configuration.isTrue("useOAuth2Authentication") ? true : false;
+        accountId = configuration.get("accountId");
+        scope = configuration.get("scope");
+
         if (clientId != null && clientSecret != null) {
             authConnection = new ETRestConnection(this, authEndpoint, true);
             requestToken();
             restConnection = new ETRestConnection(this, endpoint);
-            if (soapEndpoint == null) {
-                //
-                // If a SOAP endpoint isn't specified automatically determine it:
-                //
-
-                ETRestConnection.Response response = restConnection.get(PATH_ENDPOINTS_SOAP);
-                String responsePayload = response.getResponsePayload();
-                JsonParser jsonParser = new JsonParser();
-                JsonObject jsonObject = jsonParser.parse(responsePayload).getAsJsonObject();
-                soapEndpoint = jsonObject.get("url").getAsString();
-            }
+            fetchSoapEndpoint();
             soapConnection = new ETSoapConnection(this, soapEndpoint, accessToken);
         } else {
             if (username == null || password == null) {
@@ -187,34 +200,99 @@ public class ETClient {
         }
     }
 
+    private void fetchSoapEndpoint() {
+        if(useOAuth2Authentication) {
+            return;
+        }
+
+        if (soapEndpoint == null || soapEndpoint.equals("")) {
+            //
+            // If a SOAP endpoint isn't specified automatically determine it:
+            //
+            try {
+                if(System.currentTimeMillis() > soapEndpointExpiration || fetchedSoapEndpoint == null) {
+                    ETRestConnection.Response response = restConnection.get(PATH_ENDPOINTS_SOAP);
+                    if (response.getResponseCode() == 200) {
+                        String responsePayload = response.getResponsePayload();
+                        JsonParser jsonParser = new JsonParser();
+                        JsonObject jsonObject = jsonParser.parse(responsePayload).getAsJsonObject();
+                        soapEndpoint = jsonObject.get("url").getAsString();
+                        fetchedSoapEndpoint = soapEndpoint;
+                        soapEndpointExpiration = System.currentTimeMillis() + cacheDurationInMillis;
+                    } else {
+                        soapEndpoint = DEFAULT_SOAP_ENDPOINT;
+                    }
+                }
+                else {
+                    soapEndpoint = fetchedSoapEndpoint;
+                }
+            }
+            catch(ETSdkException ex) {
+                soapEndpoint = DEFAULT_SOAP_ENDPOINT;
+            }
+        }
+    }
+
+    /**
+     * 
+     * @return The client ID
+     */
     public String getClientId() {
         return clientId;
     }
 
+    /**
+     * 
+     * @return The access token 
+     */
     public String getAccessToken() {
         return accessToken;
     }
 
+    /**
+     * 
+     * @return The LegacyToken
+     */
     public String getLegacyToken() {
         return accessToken;
     }
 
+    /**
+     * 
+     * @return true if auto hydrate objects, false otherwise
+     */
     public Boolean autoHydrateObjects() {
         return autoHydrateObjects;
     }
 
+    /**
+     * 
+     * @return      The ETConfiguration
+     */
     public ETConfiguration getConfiguration() {
         return configuration;
     }
 
+    /**
+     * 
+     * @return      The Gson
+     */
     public Gson getGson() {
         return gson;
     }
 
+    /**
+     * 
+     * @return      The ETRestConnection
+     */
     public ETRestConnection getRestConnection() {
         return restConnection;
     }
 
+    /**
+     * 
+     * @return      The ETSoapConnection
+     */
     public ETSoapConnection getSoapConnection() {
         return soapConnection;
     }
@@ -222,6 +300,7 @@ public class ETClient {
     /**
      * @deprecated
      * Use getRestConnection().
+     * @return      The ETRestConnection
      */
     @Deprecated
     public ETRestConnection getRESTConnection() {
@@ -231,21 +310,98 @@ public class ETClient {
     /**
      * @deprecated
      * Use getSoapConnection().
+     * @return      The ETSoapConnection
      */
     @Deprecated
     public ETSoapConnection getSOAPConnection() {
         return getSoapConnection();
     }
 
+    /**
+     * @return                      The request token
+     */
     public synchronized String requestToken()
         throws ETSdkException
     {
         return requestToken(null);
     }
 
+    private synchronized String requestOAuth2Token()
+        throws ETSdkException
+    {
+        if (clientId == null || clientSecret == null) {
+            // no-op
+            return null;
+        }
+        //
+        // Construct the JSON payload.
+        //
+
+        JsonObject jsonObject = new JsonObject();
+        jsonObject.addProperty("client_id", clientId);
+        jsonObject.addProperty("client_secret", clientSecret);
+        jsonObject.addProperty("grant_type", "client_credentials");
+        if(accountId != null && accountId.length() > 0)
+        {
+            jsonObject.addProperty("account_id", accountId);
+        }
+        if(scope != null && scope.length() > 0)
+        {
+            jsonObject.addProperty("scope", scope);
+        }
+
+        String requestPayload = gson.toJson(jsonObject);
+
+        ETRestConnection.Response response = null;
+
+        response = authConnection.post(PATH_OAUTH2TOKEN, requestPayload);
+
+        if (response.getResponseCode() != HttpURLConnection.HTTP_OK) {
+            throw new ETSdkException("error obtaining OAuth2 access token "
+                    + "("
+                    + response.getResponseCode()
+                    + " "
+                    + response.getResponseMessage()
+                    + ")");
+        }
+
+        //
+        // Parse the JSON response into the appropriate instance
+        // variables:
+        //
+
+        String responsePayload = response.getResponsePayload();
+
+        JsonParser jsonParser = new JsonParser();
+        jsonObject = jsonParser.parse(responsePayload).getAsJsonObject();
+        this.accessToken = jsonObject.get("access_token").getAsString();
+        this.expiresIn = jsonObject.get("expires_in").getAsInt();
+        this.endpoint = jsonObject.get("rest_instance_url").getAsString();
+        this.soapEndpoint = jsonObject.get("soap_instance_url").getAsString() + "service.asmx";
+
+        //
+        // Calculate the token expiration time. As before,
+        // System.currentTimeMills() is in milliseconds so
+        // we multiply expiresIn by 1000:
+        //
+
+        tokenExpirationTime = System.currentTimeMillis() + (expiresIn * 1000);
+
+        return accessToken;
+    }
+
+    /**
+     * 
+     * @param refreshToken          The refresh token
+     * @return                      The request token
+     */
     public synchronized String requestToken(String refreshToken)
         throws ETSdkException
     {
+        if(useOAuth2Authentication){
+            return requestOAuth2Token();
+        }
+
         if (clientId == null || clientSecret == null) {
             // no-op
             return null;
@@ -270,11 +426,8 @@ public class ETClient {
         String requestPayload = gson.toJson(jsonObject);
 
         ETRestConnection.Response response = null;
-        if (configuration.isTrue("requestLegacyToken")) {
-            response = authConnection.post(PATH_REQUESTTOKEN_LEGACY, requestPayload);
-        } else {
-            response = authConnection.post(PATH_REQUESTTOKEN, requestPayload);
-        }
+
+        response = authConnection.post(PATH_REQUESTTOKEN, requestPayload);
 
         if (response.getResponseCode() != HttpURLConnection.HTTP_OK) {
             throw new ETSdkException("error obtaining access token "
@@ -323,6 +476,10 @@ public class ETClient {
         return accessToken;
     }
 
+    /**
+     * 
+     * @return      The refresh token
+     */
     public synchronized String refreshToken()
         throws ETSdkException
     {
@@ -342,19 +499,23 @@ public class ETClient {
             }
 
             logger.debug("refreshing access token...");
-
-            if (refreshToken == null) {
-                throw new ETSdkException("refreshToken == null");
-            }
         }
 
         requestToken(refreshToken);
 
-        soapConnection.setAccessToken(accessToken);
+        if(soapConnection != null) {
+            soapConnection.setAccessToken(accessToken);
+        }
 
         return accessToken;
     }
 
+    /**
+     * 
+     * @param <T>           The type which extends from ETApiObject
+     * @param type          The class type to instantiate
+     * @return              The type T which extends from ETApiObject
+     */
     public <T extends ETApiObject> T instantiate(Class <T> type)
         throws ETSdkException
     {
@@ -369,6 +530,13 @@ public class ETClient {
         return object;
     }
 
+    /**
+     * 
+     * @param <T>           The type which extends from ETApiObject
+     * @param type          The class type to retrieve
+     * @param filter        The ETFilter object to be used to retrieve objects
+     * @return              The ETResponse of type T which extends from ETApiObject
+     */
     public <T extends ETApiObject> ETResponse<T> retrieve(Class<T> type,
                                                           ETFilter filter)
         throws ETSdkException
@@ -376,6 +544,13 @@ public class ETClient {
         return retrieve(type, null, null, filter);
     }
 
+    /**
+     * 
+     * @param <T>           The type which extends from ETApiObject
+     * @param type          The class type to retrieve
+     * @param filter        The filter to be used to retrieve as variable arguments of String
+     * @return              The ETResponse of type T which extends from ETApiObject
+     */
     public <T extends ETApiObject> ETResponse<T> retrieve(Class<T> type,
                                                           String... filter)
         throws ETSdkException
@@ -383,6 +558,15 @@ public class ETClient {
         return retrieve(type, null, null, ETFilter.parse(filter));
     }
 
+    /**
+     * 
+     * @param <T>           The type which extends from ETApiObject
+     * @param type          The class type to retrieve
+     * @param page          The page number
+     * @param pageSize      The page size
+     * @param filter        The ETFilter object to be used to retrieve objects
+     * @return              The ETResponse of type T which extends from ETApiObject
+     */
     @SuppressWarnings("unchecked")
     public <T extends ETApiObject> ETResponse<T> retrieve(Class<T> type,
                                                           Integer page,
@@ -431,6 +615,15 @@ public class ETClient {
         return response;
     }
 
+    /**
+     * 
+     * @param <T>           The type which extends from ETApiObject
+     * @param type          The class type to retrieve
+     * @param page          The page number
+     * @param pageSize      The page size
+     * @param filter        The filter to be used to retrieve as variable arguments of String
+     * @return              The ETResponse of type T which extends from ETApiObject
+     */
     public <T extends ETApiObject> ETResponse<T> retrieve(Class<T> type,
                                                           Integer page,
                                                           Integer pageSize,
@@ -501,6 +694,13 @@ public class ETClient {
         return retrieve(type, page, pageSize, f);
     }
 
+    /**
+     * 
+     * @param <T>           The type which extends from ETApiObject
+     * @param type          The class type to retrieve
+     * @param filter        The ETFilter object to be used to retrieve objects
+     * @return              The type T which extends from ETApiObject
+     */
     public <T extends ETApiObject> T retrieveObject(Class<T> type,
                                                     ETFilter filter)
         throws ETSdkException
@@ -512,6 +712,13 @@ public class ETClient {
         return response.getObject();
     }
 
+    /**
+     * 
+     * @param <T>           The type which extends from ETApiObject
+     * @param type          The class type to retrieve
+     * @param filter        The filter to be used to retrieve objects as variable arguments of String
+     * @return              The type T which extends from ETApiObject
+     */
     public <T extends ETApiObject> T retrieveObject(Class<T> type,
                                                     String... filter)
         throws ETSdkException
@@ -540,6 +747,13 @@ public class ETClient {
         return response.getObject();
     }
 
+    /**
+     * 
+     * @param <T>           The type which extends from ETApiObject
+     * @param type          The class type to retrieve
+     * @param filter        The ETFilter object to be used to retrieve objects
+     * @return              The List of type T which extends from ETApiObject
+     */
     public <T extends ETApiObject> List<T> retrieveObjects(Class<T> type,
                                                            ETFilter filter)
         throws ETSdkException
@@ -551,6 +765,13 @@ public class ETClient {
         return response.getObjects();
     }
 
+    /**
+     * 
+     * @param <T>           The type which extends from ETApiObject
+     * @param type          The class type to retrieve
+     * @param filter        The filter to be used to retrieve objects as variable arguments of String
+     * @return              The List of type T which extends from ETApiObject
+     */
     public <T extends ETApiObject> List<T> retrieveObjects(Class<T> type,
                                                            String... filter)
         throws ETSdkException
@@ -562,6 +783,15 @@ public class ETClient {
         return response.getObjects();
     }
 
+    /**
+     * 
+     * @param <T>           The type which extends from ETApiObject
+     * @param type          The class type to retrieve
+     * @param page          The page number
+     * @param pageSize      The page size
+     * @param filter        The ETFilter object to be used to retrieve objects
+     * @return              The List of type T which extends from ETApiObject
+     */
     public <T extends ETApiObject> List<T> retrieveObjects(Class<T> type,
                                                            Integer page,
                                                            Integer pageSize,
@@ -575,6 +805,15 @@ public class ETClient {
         return response.getObjects();
     }
 
+    /**
+     * 
+     * @param <T>           The type which extends from ETApiObject
+     * @param type          The class type to retrieve
+     * @param page          The page number
+     * @param pageSize      The page size
+     * @param filter        The filter to be used to retrieve objects as variable arguments of String
+     * @return              The List of type T which extends from ETApiObject
+     */
     public <T extends ETApiObject> List<T> retrieveObjects(Class<T> type,
                                                            Integer page,
                                                            Integer pageSize,
@@ -643,43 +882,80 @@ public class ETClient {
         return response.getObjects();
     }
 
+    /**
+     * @param <T>                   The type which extends from ETApiObject
+     * @param objects               The objects to be created as variable arguments of type T
+     * @return                      The ETResponse object of type T which extends from ETApiObject
+     */
     public <T extends ETApiObject> ETResponse<T> create(T... objects)
         throws ETSdkException
     {
         return createUpdateDelete("create", Arrays.asList(objects));
     }
 
+    /**
+     * @param <T>                   The type which extends from ETApiObject
+     * @param objects               The List of objects of type T to be created
+     * @return                      The ETResponse object of type T which extends from ETApiObject
+     */
     public <T extends ETApiObject> ETResponse<T> create(List<T> objects)
         throws ETSdkException
     {
         return createUpdateDelete("create", objects);
     }
 
+    /**
+     * @param <T>                   The type which extends from ETApiObject
+     * @param objects               The objects to be updated as variable arguments of type T
+     * @return                      The ETResponse object of type T which extends from ETApiObject
+     */
     public <T extends ETApiObject> ETResponse<T> update(T... objects)
         throws ETSdkException
     {
         return createUpdateDelete("update", Arrays.asList(objects));
     }
 
+    /**
+     * @param <T>                   The type which extends from ETApiObject
+     * @param objects               The List of objects of type T to be updated
+     * @return                      The ETResponse object of type T which extends from ETApiObject
+     */
     public <T extends ETApiObject> ETResponse<T> update(List<T> objects)
         throws ETSdkException
     {
         return createUpdateDelete("update", objects);
     }
 
+    /**
+     * @param <T>                   The type which extends from ETApiObject
+     * @param objects               The objects to be deleted as variable arguments of type T
+     * @return                      The ETResponse object of type T which extends from ETApiObject
+     */
     public <T extends ETApiObject> ETResponse<T> delete(T... objects)
         throws ETSdkException
     {
         return createUpdateDelete("delete", Arrays.asList(objects));
     }
 
+    /**
+     * @param <T>                   The type which extends from ETApiObject
+     * @param objects               The List of objects of type T to be deleted
+     * @return                      The ETResponse object of type T which extends from ETApiObject
+     */
     public <T extends ETApiObject> ETResponse<T> delete(List<T> objects)
         throws ETSdkException
     {
         return createUpdateDelete("delete", objects);
     }
 
-    public <T extends ETApiObject> ETResponse<T> update(Class<T> type,
+    /**
+     * @param <T>                   The type which extends from ETApiObject
+     * @param type                  The class type to delete
+     * @param filter                The filter to be used to do filter
+     * @param values                The values as variable arguments of String which is used to do the update 
+     * @return                      The ETResponse object of type T which extends from ETApiObject
+     */
+     public <T extends ETApiObject> ETResponse<T> update(Class<T> type,
                                                         String filter,
                                                         String... values)
         throws ETSdkException
@@ -716,6 +992,12 @@ public class ETClient {
         return update(objects);
     }
 
+    /**
+     * @param <T>                   The type which extends from ETApiObject
+     * @param type                  The class type to delete
+     * @param filter                The ETFilter object to be used for filter
+     * @return                      The ETResponse object of type T which extends from ETApiObject
+     */
     public <T extends ETApiObject> ETResponse<T> delete(Class<T> type,
                                                         ETFilter filter)
         throws ETSdkException
@@ -746,6 +1028,12 @@ public class ETClient {
         return delete(response.getObjects());
     }
 
+    /**
+     * @param <T>                   The type which extends from ETApiObject
+     * @param type                  The class type to delete
+     * @param filter                The filter to be used to do filter
+     * @return                      The ETResponse object of type T which extends from ETApiObject
+     */
     public <T extends ETApiObject> ETResponse<T> delete(Class<T> type,
                                                         String filter)
         throws ETSdkException

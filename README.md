@@ -25,19 +25,37 @@ Java platform. Among other things, the SDK:
 For more information about the Java SDK and how to use it, please see
 the Javadocs at http://salesforce-marketingcloud.github.io/FuelSDK-Java/.
 
+New Features in Version 1.4.0
+------------
+* Added support for OAuth2 authentication - [More Details](https://developer.salesforce.com/docs/atlas.en-us.mc-app-development.meta/mc-app-development/integration-considerations.htm)
+* To enable OAuth2 authentication, set `useOAuth2Authentication=true` in the fuelsdk.properties file.
+
+  Sample Config for OAuth2:
+
+```
+clientId=<CLIENT_ID>
+clientSecret=<CLIENT_SECRET>
+authEndpoint=<AUTH TENANT SPECIFIC ENDPOINT>
+endpoint=<REST TENANT SPECIFIC ENDPOINT>
+soapEndpoint=<SOAP TENANT SPECIFIC ENDPOINT>
+useOAuth2Authentication=true
+accountId=<TARGET_ACCOUNT_ID>
+scope=<PERMISSION_LIST>
+```
+
 Installation
 ------------
 
 The easiest way to install the Java SDK is via Maven&mdash;simply add the following dependency to your project's `pom.xml`:
 
     <dependency>
-      <groupId>com.exacttarget</groupId>
+      <groupId>com.github.salesforce-marketingcloud</groupId>
       <artifactId>fuelsdk</artifactId>
-      <version>1.1.0</version>
+      <version>1.4.0</version>
     </dependency>
 
 Maven will automatically resolve, download, and install all dependencies for you.
 
 You can also download a jar file from the [Releases](https://github.com/salesforce-marketingcloud/FuelSDK-Java/releases) page or clone the repository and build a jar file yourself in the standard way. If you go this route, you'll need to ensure you have manually downloaded and installed all dependencies ([Apache CXF](http://cxf.apache.org), [Apache Commons BeanUtils](http://commons.apache.org/proper/commons-beanutils), [Apache log4j 1.x](http://logging.apache.org/log4j/1.2/), and [Google Gson](https://code.google.com/p/google-gson)) to your class path.
 
-Once you have the SDK installed, you'll need to obtain a client ID and client secret from App Center and place them in `fuelsdk.properties` using `src/main/resources/fuelsdk.properties.template` as a starting template. Theses values authenticate you to the Saleforce Marketing Cloud API. Please see https://code.exacttarget.com/getting-started/setting-your-development-environment for more information about how to use App Center to get a client ID and client secret.
+Once you have the SDK installed, you'll need to obtain a client ID and client secret from App Center and place them in `fuelsdk.properties` using `src/main/resources/fuelsdk.properties.template` as a starting template. Theses values authenticate you to the Saleforce Marketing Cloud API.

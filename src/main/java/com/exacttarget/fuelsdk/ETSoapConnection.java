@@ -36,6 +36,9 @@ package com.exacttarget.fuelsdk;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.Arrays;
 
 import javax.xml.namespace.QName;
 import javax.xml.soap.SOAPElement;
@@ -56,6 +59,10 @@ import org.apache.log4j.Logger;
 
 import com.exacttarget.fuelsdk.internal.PartnerAPI;
 import com.exacttarget.fuelsdk.internal.Soap;
+import java.util.logging.Level;
+import javax.xml.bind.JAXBException;
+import org.apache.cxf.jaxb.JAXBDataBinding;
+import org.apache.cxf.transport.http.Headers;
 
 /**
  * An <code>ETSoapConnection</code> represents an active
@@ -75,6 +82,12 @@ public class ETSoapConnection {
     private SOAPFactory soapFactory = null;
     private SOAPElement accessTokenElement = null;
 
+    /** 
+    * Class constructor, Initializes a new instance of the class.
+     * @param client    The ETClient object
+     * @param endpoint  The endpoint URL
+     * @throws com.exacttarget.fuelsdk.ETSdkException
+    */
     public ETSoapConnection(ETClient client, String endpoint)
         throws ETSdkException
     {
@@ -89,6 +102,8 @@ public class ETSoapConnection {
             soap = service.getSoap();
             soapClient = ClientProxy.getClient(soap);
             soapClient.getInInterceptors().add(new ClearAttachmentsOutInterceptor());
+            soapClient.getOutInterceptors().add(new ClearAttachmentsOutInterceptor());  //
+
             Endpoint soapEndpoint = soapClient.getEndpoint();
             soapFactory = SOAPFactory.newInstance();
             soapClient.getRequestContext().put(Message.ENDPOINT_ADDRESS,
@@ -124,6 +139,7 @@ public class ETSoapConnection {
                 conduit.setTlsClientParameters(tlsClientParameters);
             }
             soapClient.getRequestContext().put(Message.ENCODING, "UTF-8");
+            
             LoggingInInterceptor loggingInInterceptor =
                     new LoggingInInterceptor();
             loggingInInterceptor.setPrettyLogging(true);
@@ -137,6 +153,14 @@ public class ETSoapConnection {
         }
     }
 
+    /** 
+    * Class constructor, Initializes a new instance of the class.
+     * @param client        The ETClient object
+     * @param endpoint      The endpoint URL
+     * @param username      The username
+     * @param password      The password
+     * @throws com.exacttarget.fuelsdk.ETSdkException
+    */
     public ETSoapConnection(ETClient client, String endpoint,
                             String username,
                             String password)
@@ -173,6 +197,13 @@ public class ETSoapConnection {
         }
     }
 
+    /** 
+    * Class constructor, Initializes a new instance of the class.
+     * @param client        The ETClient object
+     * @param endpoint      The endpoint URL
+     * @param accessToken   The access token
+     * @throws com.exacttarget.fuelsdk.ETSdkException
+    */
     public ETSoapConnection(ETClient client, String endpoint, String accessToken)
         throws ETSdkException
     {
@@ -188,21 +219,41 @@ public class ETSoapConnection {
             }
 
             headers.add(new Header(new QName(null, "fueloauth"), accessTokenElement));
-
+            
             soapClient.getRequestContext().put(Header.HEADER_LIST, headers);
         } catch (SOAPException ex) {
             throw new ETSdkException("could not initialize SOAP proxy", ex);
         }
     }
 
+    /**
+     * @return  The Soap object
+     */
     public Soap getSoap() {
         return soap;
     }
 
+    public Soap getSoap(String m) {
+        soapClient.getRequestContext().put("HTTP_HEADER_USER_AGENT", "FuelSDK-Java-v1.4.0-SOAP-"+m);
+        return soap;
+    }
+    
+    public Soap getSoap(String m, String o) {
+        soapClient.getRequestContext().put("HTTP_HEADER_USER_AGENT", "FuelSDK-Java-v1.4.0-SOAP-"+m+"-"+o);
+        return soap;
+    }    
+    
+    /**
+     * @return  The end point URL
+     */
     public String getEndpoint() {
         return endpoint;
     }
 
+    /**
+     * @param accessToken       The access token
+     * @throws ETSdkException 
+     */
     public void setAccessToken(String accessToken)
         throws ETSdkException
     {
