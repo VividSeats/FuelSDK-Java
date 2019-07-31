@@ -51,6 +51,7 @@ import com.exacttarget.fuelsdk.annotations.SoapObject;
 import com.exacttarget.fuelsdk.ETDataExtensionColumn.Type;
 import com.exacttarget.fuelsdk.internal.APIObject;
 import com.exacttarget.fuelsdk.internal.APIProperty;
+import com.exacttarget.fuelsdk.internal.Attribute;
 import com.exacttarget.fuelsdk.internal.DataExtension;
 import com.exacttarget.fuelsdk.internal.DataExtensionObject;
 
@@ -64,7 +65,7 @@ import com.exacttarget.fuelsdk.internal.DataExtensionObject;
             collection = "items",
             totalCount = "count")
 @SoapObject(internalType = DataExtension.class, unretrievable = {
-    "ID", "Fields"
+    "ID", "Fields", "SendableDataExtensionField", "SendableSubscriberField"
 })
 public class ETDataExtension extends ETSoapObject {
 	static final int DEFAULT_PAGE_SIZE = 2500;
@@ -94,71 +95,160 @@ public class ETDataExtension extends ETSoapObject {
     private Boolean isSendable = null;
     @ExternalName("isTestable")
     private Boolean isTestable = null;
+    
+    @ExternalName("sendableDataExtensionField")
+    private ETDataExtensionColumn sendableDataExtensionField;
+    
+    @ExternalName("sendableSubscriberField")
+    private Attribute sendableSubscriberField;
 
+    
+    
+    /** 
+    * Class constructor, Initializes a new instance of the class.
+    */    
     public ETDataExtension() {}
 
+    /** 
+    * @return The Identifier of the ETDataExtension object.
+    */    
     @Override
     public String getId() {
         return id;
     }
 
+    /** 
+    * @param id     The Identifier of the ETDataExtension object.
+    */    
     @Override
     public void setId(String id) {
         this.id = id;
     }
 
+    /** 
+    * @return       The Customer Key of the ETDataExtension object.
+    */     
     public String getKey() {
         return key;
     }
 
+    /** 
+    * @param key    The Customer Key of the ETDataExtension object.
+    */      
     public void setKey(String key) {
         this.key = key;
     }
 
+    /** 
+    * @return     The name of the ETDataExtension object.
+    */     
     public String getName() {
         return name;
     }
 
+    /** 
+    * @param name   The name of the ETDataExtension object.
+    */     
     public void setName(String name) {
         this.name = name;
     }
 
+    /** 
+    * @return     The description of the ETDataExtension.
+    */    
     public String getDescription() {
         return description;
     }
 
+    /** 
+    * @param description    The description of the ETDataExtension.
+    */    
     public void setDescription(String description) {
         this.description = description;
     }
 
+    /** 
+    * @return     The created date of the ETDataExtension object.
+    */
     public Date getCreatedDate() {
         return createdDate;
     }
 
+    /** 
+    * @param createdDate        The created date of the ETDataExtension object.
+    */
     public void setCreatedDate(Date createdDate) {
         this.createdDate = createdDate;
     }
 
+    /** 
+    * @return     The modified date of the ETDataExtension object.
+    */
     public Date getModifiedDate() {
         return modifiedDate;
     }
 
+    /** 
+    * @param modifiedDate       The modified date of the ETDataExtension object.
+    */    
     public void setModifiedDate(Date modifiedDate) {
         this.modifiedDate = modifiedDate;
     }
 
+    /**
+     * @return      The folder identifier.
+     */
     public Integer getFolderId() {
         return folderId;
     }
 
+    /**
+     * @param     folderId    The folder identifier.
+     */
     public void setFolderId(Integer folderId) {
         this.folderId = folderId;
     }
 
+    /**
+     * @return the sendableSubscriberField
+     */
+    public Attribute getSendableSubscriberField() {
+        return sendableSubscriberField;
+    }
+
+    /**
+     * @param sendableSubscriberField the sendableSubscriberField to set
+     */
+    public void setSendableSubscriberField(Attribute sendableSubscriberField) {
+        this.sendableSubscriberField = sendableSubscriberField;
+    }
+
+    /**
+     * @return the sendableDataExtensionField
+     */
+    public ETDataExtensionColumn getSendableDataExtensionField() {
+        return sendableDataExtensionField;
+    }
+
+    /**
+     * @param sendableDataExtensionField the sendableDataExtensionField to set
+     */
+    public void setSendableDataExtensionField(ETDataExtensionColumn sendableDataExtensionField) {
+        this.sendableDataExtensionField = sendableDataExtensionField;
+    }    
+    
+    
+    /**
+     * @return  The List of all ETDataExtensionColumn
+     */
     public List<ETDataExtensionColumn> getColumns() {
         return columns;
     }
 
+    /**
+     * @param   name        The column name
+     * @return  The ETDataExtensionColumn
+     */
     public ETDataExtensionColumn getColumn(String name) {
         for (ETDataExtensionColumn column : columns) {
             if (column.getName().equals(name.toLowerCase())) {
@@ -168,22 +258,48 @@ public class ETDataExtension extends ETSoapObject {
         return null;
     }
 
+    /** 
+    * @param name       The column name of the ETDataExtension object.
+    */    
     public void addColumn(String name) {
         addColumn(name, null, null, null, null, null, null, null);
     }
 
+    /** 
+    * @param name       The column name of the ETDataExtension object.
+    * @param type       The ETDataExtensionColumn type
+    */    
     public void addColumn(String name, Type type) {
         addColumn(name, type, null, null, null, null, null, null);
     }
 
+    /** 
+    * @param name           The column name of the ETDataExtension object.
+    * @param isPrimaryKey   true if the column is primary key, false otherwise.
+    */    
     public void addColumn(String name, Boolean isPrimaryKey) {
         addColumn(name, null, null, null, null, isPrimaryKey, null, null);
     }
 
+    /** 
+    * @param name       The column name of the ETDataExtension object.
+    * @param type       The ETDataExtensionColumn type
+    * @param isPrimaryKey   true if the column is primary key, false otherwise.
+    */    
     public void addColumn(String name, Type type, Boolean isPrimaryKey) {
         addColumn(name, type, null, null, null, isPrimaryKey, null, null);
     }
 
+    /** 
+    * @param name       The column name of the ETDataExtension object.
+    * @param type       The ETDataExtensionColumn type
+    * @param length     The length
+    * @param precision  The precision
+    * @param scale      The scale
+    * @param isPrimaryKey   true if the column is primary key, false otherwise.
+    * @param isRequired     true if the column is required, false otherwise.
+    * @param defaultValue   The default value of the column
+    */    
     public void addColumn(String name,
                           Type type,
                           Integer length,
@@ -231,10 +347,17 @@ public class ETDataExtension extends ETSoapObject {
         addColumn(column);
     }
 
+    /** 
+    * @param column       The ETDataExtensionColumn object to add.
+    */    
     public void addColumn(ETDataExtensionColumn column) {
         columns.add(column);
     }
 
+    /**
+     * @return  The List of ETDataExtension Column names
+     * @throws com.exacttarget.fuelsdk.ETSdkException
+     */
     public List<String> getColumnNames()
         throws ETSdkException
     {
@@ -244,18 +367,30 @@ public class ETDataExtension extends ETSoapObject {
         return getColumnNames(columns);
     }
 
+    /**
+     * @return true if it is sendable data extension, false otherwise.
+     */
     public Boolean getIsSendable() {
         return isSendable;
     }
 
+    /**
+     * @param   isSendable  true if it is sendable data extension, false otherwise.
+     */
     public void setIsSendable(Boolean isSendable) {
         this.isSendable = isSendable;
     }
 
+    /**
+     * @return true if it is testable data extension, false otherwise.
+     */
     public Boolean getIsTestable() {
         return isTestable;
     }
 
+    /**
+     * @param isTestable true if it is testable data extension, false otherwise.
+     */
     public void setIsTestable(Boolean isTestable) {
         this.isTestable = isTestable;
     }
@@ -295,7 +430,15 @@ public class ETDataExtension extends ETSoapObject {
     public void setCategoryId(Integer categoryId) {
         setFolderId(categoryId);
     }
-
+    
+    /**
+     *
+     * @param client        The ETClient object
+     * @param dataExtension The data extension 
+     * @param filter        The ETFilter to be used to select rows 
+     * @return              The ETResponse of ETDataExtensionRow 
+     * @throws ETSdkException
+     */
     public static ETResponse<ETDataExtensionRow> select(ETClient client,
                                                         String dataExtension,
                                                         ETFilter filter)
@@ -304,6 +447,14 @@ public class ETDataExtension extends ETSoapObject {
         return select(client, dataExtension, null, null, filter);
     }
 
+    /**
+     *
+     * @param client        The ETClient object
+     * @param dataExtension The data extension 
+     * @param filter        The filter to be used to select rows as variable arguments of String
+     * @return              The ETResponse of ETDataExtensionRow 
+     * @throws ETSdkException
+     */
     public static ETResponse<ETDataExtensionRow> select(ETClient client,
                                                         String dataExtension,
                                                         String... filter)
@@ -312,6 +463,16 @@ public class ETDataExtension extends ETSoapObject {
         return select(client, dataExtension, null, null, ETFilter.parse(filter));
     }
 
+    /**
+     *
+     * @param client        The ETClient object
+     * @param dataExtension The data extension 
+     * @param page          The page number
+     * @param pageSize      The page size
+     * @param filter        The ETFilter to be used to select rows 
+     * @return              The ETResponse of ETDataExtensionRow 
+     * @throws ETSdkException
+     */
     public static ETResponse<ETDataExtensionRow> select(ETClient client,
                                                         String dataExtension,
                                                         Integer page,
@@ -435,7 +596,7 @@ public class ETDataExtension extends ETSoapObject {
         logger.debug("filter: " + filter);
         if (filter.getOrderBy() != null && filter.getOrderBy().size() > 0) {
             // Sort the results
-            final String orderByColumn = filter.getOrderBy().get(0).toLowerCase();
+            final String orderByColumn = filter.getOrderBy().get(0);//.toLowerCase();
             List<String> list = filter.getProperties();
             if (list.contains(orderByColumn)) {
                 final boolean sortAsc = filter.getOrderByAsc();
@@ -476,6 +637,16 @@ public class ETDataExtension extends ETSoapObject {
         return pr;
     }
     
+    /**
+     *
+     * @param client        The ETClient object
+     * @param dataExtension The data extension 
+     * @param page          The page number
+     * @param pageSize      The page size
+     * @param filter        The filter to be used to select rows as variable arguments of String
+     * @return              The ETResponse of ETDataExtensionRow 
+     * @throws ETSdkException
+     */
     public static ETResponse<ETDataExtensionRow> select(ETClient client,
                                                         String dataExtension,
                                                         Integer page,
@@ -537,18 +708,39 @@ public class ETDataExtension extends ETSoapObject {
         return select(client, dataExtension, ETFilter.parse(filter), page, pageSize, columns);
     }
 
+    /**
+     *
+     * @param filter        The ETFilter to be used to select rows 
+     * @return              The ETResponse of ETDataExtensionRow 
+     * @throws ETSdkException
+     */
     public ETResponse<ETDataExtensionRow> select(ETFilter filter)
         throws ETSdkException
     {
         return select((Integer) null, (Integer) null, filter);
     }
 
+    /**
+     *
+     * @param filter        The filter to be used to select rows as variable arguments of String
+     * @return              The ETResponse of ETDataExtensionRow 
+     * @throws ETSdkException
+     */
     public ETResponse<ETDataExtensionRow> select(String... filter)
         throws ETSdkException
     {
-        return select((Integer) null, (Integer) null, ETFilter.parse(filter));
+        ETFilter fil = ETFilter.parse(filter);
+        return select((Integer) null, (Integer) null, fil);
     }
 
+    /**
+     *
+     * @param page          The page number
+     * @param pageSize      The page size
+     * @param filter        The ETFilter to be used to select rows 
+     * @return              The ETResponse of ETDataExtensionRow 
+     * @throws ETSdkException
+     */
     public ETResponse<ETDataExtensionRow> select(Integer page,
                                                  Integer pageSize,
                                                  ETFilter filter)
@@ -561,6 +753,14 @@ public class ETDataExtension extends ETSoapObject {
         return ETDataExtension.select(getClient(), "key=" + getKey(), page, pageSize, filter);
     }
 
+    /**
+     *
+     * @param page          The page number
+     * @param pageSize      The page size
+     * @param filter        The filter to be used to select rows as variable arguments of String
+     * @return              The ETResponse of ETDataExtensionRow 
+     * @throws ETSdkException
+     */
     public ETResponse<ETDataExtensionRow> select(Integer page,
                                                  Integer pageSize,
                                                  String... filter)
@@ -618,12 +818,22 @@ public class ETDataExtension extends ETSoapObject {
         return select(ETFilter.parse(filter), page, pageSize, columns);
     }
 
+    /**
+     * @param rows              The filter to be used to insert rows as variable arguments of ETDataExtensionRow
+     * @return                  The ETResponse of ETDataExtensionRow 
+     * @throws ETSdkException
+     */
     public ETResponse<ETDataExtensionRow> insert(ETDataExtensionRow... rows)
         throws ETSdkException
     {
         return insert(Arrays.asList(rows));
     }
 
+    /**
+     * @param rows              The filter to be used to insert rows as List of ETDataExtensionRow
+     * @return                  The ETResponse of ETDataExtensionRow 
+     * @throws ETSdkException
+     */
     public ETResponse<ETDataExtensionRow> insert(List<ETDataExtensionRow> rows)
         throws ETSdkException
     {
@@ -640,12 +850,22 @@ public class ETDataExtension extends ETSoapObject {
         return super.create(getClient(), rows);
     }
 
+    /**
+     * @param rows              The filter to be used to update rows as variable arguments of ETDataExtensionRow
+     * @return                  The ETResponse of ETDataExtensionRow 
+     * @throws ETSdkException
+     */
     public ETResponse<ETDataExtensionRow> update(ETDataExtensionRow... rows)
         throws ETSdkException
     {
         return update(Arrays.asList(rows));
     }
 
+    /**
+     * @param rows              The filter to be used to update rows as List of ETDataExtensionRow
+     * @return                  The ETResponse of ETDataExtensionRow 
+     * @throws ETSdkException
+     */
     public ETResponse<ETDataExtensionRow> update(List<ETDataExtensionRow> rows)
         throws ETSdkException
     {
@@ -662,12 +882,22 @@ public class ETDataExtension extends ETSoapObject {
         return super.update(getClient(), rows);
     }
 
+    /**
+     * @param rows              The filter to be used to delete rows as variable arguments of ETDataExtensionRow
+     * @return                  The ETResponse of ETDataExtensionRow 
+     * @throws ETSdkException
+     */
     public ETResponse<ETDataExtensionRow> delete(ETDataExtensionRow... rows)
         throws ETSdkException
     {
         return delete(Arrays.asList(rows));
     }
 
+    /**
+     * @param rows              The filter to be used to delete rows as List of ETDataExtensionRow
+     * @return                  The ETResponse of ETDataExtensionRow 
+     * @throws ETSdkException
+     */
     public ETResponse<ETDataExtensionRow> delete(List<ETDataExtensionRow> rows)
         throws ETSdkException
     {
@@ -702,6 +932,12 @@ public class ETDataExtension extends ETSoapObject {
         return super.delete(getClient(), internalRows, true);
     }
 
+    /**
+     * @param filter            The filter to be used to update rows
+     * @param values            The values as variable arguments of String which is used to do the update 
+     * @return                  The ETResponse of ETDataExtensionRow 
+     * @throws ETSdkException
+     */
     public ETResponse<ETDataExtensionRow> update(String filter, String... values)
         throws ETSdkException
     {
@@ -719,6 +955,11 @@ public class ETDataExtension extends ETSoapObject {
         return update(rows);
     }
 
+    /**
+     * @param filter            The filter to be used to delete rows
+     * @return                  The ETResponse of ETDataExtensionRow 
+     * @throws ETSdkException
+     */
     public ETResponse<ETDataExtensionRow> delete(String filter)
         throws ETSdkException
     {
@@ -726,12 +967,22 @@ public class ETDataExtension extends ETSoapObject {
         return delete(rows);
     }
 
+    /**
+     * Calls the retrieveColumns() method
+     * @throws ETSdkException 
+     */
     public void hydrate()
         throws ETSdkException
     {
         retrieveColumns();
     }
 
+    /**
+     * @param client        The ETClient object
+     * @param key           The key
+     * @return              The List of ETDataExtensionColumn
+     * @throws ETSdkException 
+     */
     public static List<ETDataExtensionColumn> retrieveColumns(ETClient client,
                                                               String key)
         throws ETSdkException
@@ -764,6 +1015,10 @@ public class ETDataExtension extends ETSoapObject {
         return response.getObjects();
     }
 
+    /**
+     * @return  The List of ETDataExtensionColumn
+     * @throws ETSdkException 
+     */
     public List<ETDataExtensionColumn> retrieveColumns()
         throws ETSdkException
     {
@@ -771,6 +1026,13 @@ public class ETDataExtension extends ETSoapObject {
         return columns;
     }
 
+    /**
+     * 
+     * @param client        The ETClient object
+     * @param key           The key
+     * @return              The List of Column names
+     * @throws ETSdkException 
+     */
     private static List<String> retrieveColumnNames(ETClient client,
                                                     String key)
         throws ETSdkException
@@ -778,6 +1040,10 @@ public class ETDataExtension extends ETSoapObject {
         return getColumnNames(retrieveColumns(client, key));
     }
 
+    /**
+     * @param filter        The filter to be used to get matching rows
+     * @return              The List of ETDataExtensionRow which are matched
+     */
     private List<ETDataExtensionRow> getMatchingRows(String filter)
         throws ETSdkException
     {
@@ -810,6 +1076,10 @@ public class ETDataExtension extends ETSoapObject {
         return rows;
     }
 
+    /**
+     * @param columns The List of ETDataExtensionColumn object
+     * @return  The List of ETDataExtension Column names
+     */
     private static List<String> getColumnNames(List<ETDataExtensionColumn> columns) {
         List<String> columnNames = new ArrayList<String>();
         for (ETDataExtensionColumn column : columns) {

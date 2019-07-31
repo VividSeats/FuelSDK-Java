@@ -36,11 +36,13 @@ package com.exacttarget.fuelsdk;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.log4j.Logger;
-
 import com.exacttarget.fuelsdk.annotations.PrettyPrint;
 
+/**
+ * An <code>ETResponse</code> object represents response from SOAP/REST call
+ * in the Salesforce Marketing Cloud.
+ */
 public class ETResponse<T extends ETApiObject> extends ETObject {
     private static Logger logger = Logger.getLogger(ETResponse.class);
 
@@ -57,6 +59,9 @@ public class ETResponse<T extends ETApiObject> extends ETObject {
     @PrettyPrint
     private Integer totalCount = null;
 
+    /** 
+    * @return The Status of the ETResponse object.
+    */    
     public ETResult.Status getStatus() {
         if (batchResult != null) {
             return batchResult.getStatus();
@@ -64,6 +69,9 @@ public class ETResponse<T extends ETApiObject> extends ETObject {
         return null;
     }
 
+    /** 
+    * @param    status   The Status of the ETResponse object.
+    */    
     public void setStatus(ETResult.Status status) {
         if (batchResult == null) {
             batchResult = new ETResult<T>();
@@ -71,6 +79,9 @@ public class ETResponse<T extends ETApiObject> extends ETObject {
         batchResult.setStatus(status);
     }
 
+    /** 
+    * @return The Request Identifier of the ETResponse object.
+    */    
     public String getRequestId() {
         if (batchResult != null) {
             return batchResult.getRequestId();
@@ -78,6 +89,9 @@ public class ETResponse<T extends ETApiObject> extends ETObject {
         return null;
     }
 
+    /** 
+    * @param    requestId    The Request Identifier of the ETResponse object.
+    */    
     public void setRequestId(String requestId) {
         if (batchResult == null) {
             batchResult = new ETResult<T>();
@@ -85,6 +99,9 @@ public class ETResponse<T extends ETApiObject> extends ETObject {
         batchResult.setRequestId(requestId);
     }
 
+    /** 
+    * @return The response code of the ETResponse object.
+    */    
     public String getResponseCode() {
         if (batchResult != null) {
             return batchResult.getResponseCode();
@@ -92,6 +109,9 @@ public class ETResponse<T extends ETApiObject> extends ETObject {
         return null;
     }
 
+    /** 
+    * @param responseCode   The response code of the ETResponse object.
+    */    
     public void setResponseCode(String responseCode) {
         if (batchResult == null) {
             batchResult = new ETResult<T>();
@@ -99,6 +119,9 @@ public class ETResponse<T extends ETApiObject> extends ETObject {
         batchResult.setResponseCode(responseCode);
     }
 
+    /** 
+    * @return The response message of the ETResponse object.
+    */    
     public String getResponseMessage() {
         if (batchResult != null) {
             return batchResult.getResponseMessage();
@@ -106,6 +129,9 @@ public class ETResponse<T extends ETApiObject> extends ETObject {
         return null;
     }
 
+    /** 
+    * @param  responseMessage   The response message of the ETResponse object.
+    */    
     public void setResponseMessage(String responseMessage) {
         if (batchResult == null) {
             batchResult = new ETResult<T>();
@@ -113,10 +139,16 @@ public class ETResponse<T extends ETApiObject> extends ETObject {
         batchResult.setResponseMessage(responseMessage);
     }
 
+    /** 
+    * @return The Object from the ETResult.
+    */    
     public T getObject() {
         return getResult().getObject();
     }
 
+    /** 
+    * @return The List of individual Results Objects.
+    */    
     public List<T> getObjects() {
         List<T> objects = new ArrayList<T>();
         for (ETResult<T> result : individualResults) {
@@ -125,6 +157,9 @@ public class ETResponse<T extends ETApiObject> extends ETObject {
         return objects;
     }
 
+    /** 
+    * @return The ETResult Object associated with individual result of the ETResponse object.
+    */    
     public ETResult<T> getResult() {
         if (individualResults.size() == 0) {
             return null;
@@ -135,42 +170,72 @@ public class ETResponse<T extends ETApiObject> extends ETObject {
         return individualResults.get(0);
     }
 
+    /** 
+    * @return The List of ETResult Objects.
+    */    
     public List<ETResult<T>> getResults() {
         return individualResults;
     }
 
+    /** 
+    * @param  result The ETResult object to add.
+    */    
     public void addResult(ETResult<T> result) {
         individualResults.add(result);
     }
 
+    /** 
+    * @return true if there are more results, false otherwise.
+    */    
     public Boolean hasMoreResults() {
         return moreResults;
     }
 
+    /** 
+    * @param moreResults     true if there are more results, false otherwise.
+    */    
     public void setMoreResults(Boolean moreResults) {
         this.moreResults = moreResults;
     }
 
+    /** 
+    * @return The page number of the ETResponse object.
+    */    
     public Integer getPage() {
         return page;
     }
 
+    /** 
+    * @param  page The page number of the ETResponse object.
+    */    
     public void setPage(Integer page) {
         this.page = page;
     }
 
+    /** 
+    * @return The page size of the ETResponse object.
+    */    
     public Integer getPageSize() {
         return pageSize;
     }
 
+    /** 
+    * @param  pageSize The page size of the ETResponse object.
+    */    
     public void setPageSize(Integer pageSize) {
         this.pageSize = pageSize;
     }
 
+    /** 
+    * @return The total count of the ETResponse object.
+    */    
     public Integer getTotalCount() {
         return totalCount;
     }
 
+    /** 
+    * @param  totalCount The total count of the ETResponse object.
+    */    
     public void setTotalCount(Integer totalCount) {
         this.totalCount = totalCount;
     }
