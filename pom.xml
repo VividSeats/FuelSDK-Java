@@ -183,14 +183,19 @@
 <!--            <goals>-->
 <!--              <goal>sign</goal>-->
 <!--            </goals>-->
+<!--            <configuration>-->
+<!--            </configuration>-->
 <!--          </execution>-->
 <!--        </executions>-->
 <!--      </plugin>-->
-<!--
+
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-shade-plugin</artifactId>
         <version>2.4.1</version>
+        <configuration>
+          <createDependencyReducedPom>true</createDependencyReducedPom>
+        </configuration>
         <executions>
           <execution>
             <phase>package</phase>
@@ -198,8 +203,11 @@
               <goal>shade</goal>
             </goals>
             <configuration>
-              <shadedArtifactAttached>true</shadedArtifactAttached>
-              <shadedClassifierName>shaded</shadedClassifierName>
+              <transformers>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+                  <resource>META-INF/cxf/bus-extensions.txt</resource>
+                </transformer>
+              </transformers>
               <filters>
                 <filter>
                   <artifact>*:*</artifact>
@@ -214,7 +222,7 @@
           </execution>
         </executions>
       </plugin>
--->
+w
       <!-- generate Java source from WSDL -->
       <plugin>
         <groupId>org.apache.cxf</groupId>
